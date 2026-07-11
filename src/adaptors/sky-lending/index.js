@@ -529,6 +529,37 @@ const susdsAPY = async () => {
     })
   );
 
+  // sUSDS via Pendle — issuer row for the Sky-incentivized Pendle sUSDS market
+  // (PT/YT/LP). TVL = SY-sUSDS total supply × sUSDS price: total sUSDS locked in
+  // the Pendle ecosystem, incl. PT/YT held outside the AMM — a measure the pendle
+  // adapter's AMM-liquidity rows do not carry. Pool id = the SY token, stable
+  // across maturity rolls and distinct from the pendle adapter's market/PT ids.
+  const SY_SUSDS = '0xbe3d4ec488a0a042bb86f9176c24f8cd54018ba7';
+  const PENDLE_SUSDS_MARKET = '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc';
+  const syTotalSupply =
+    (
+      await sdk.api.abi.call({
+        target: SY_SUSDS,
+        abi: 'erc20:totalSupply',
+        chain: 'ethereum',
+      })
+    ).output / 1e18;
+  const ethSusdsPrice = prices[`ethereum:${ETH_SUSDS}`]?.price;
+  if (ethSusdsPrice) {
+    pools.push({
+      pool: SY_SUSDS,
+      symbol: 'SUSDS',
+      project: 'sky-lending',
+      chain: 'ethereum',
+      token: SY_SUSDS,
+      tvlUsd: syTotalSupply * ethSusdsPrice,
+      apyBase,
+      poolMeta: 'via Pendle (PT/YT/LP)',
+      underlyingTokens: [ETH_SUSDS],
+      url: `https://app.pendle.finance/trade/pools/${PENDLE_SUSDS_MARKET}/zap/in?chain=ethereum`,
+    });
+  }
+
   return pools.filter(Boolean);
 };
 
